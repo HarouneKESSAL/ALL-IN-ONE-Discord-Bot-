@@ -223,6 +223,32 @@ module.exports = async (client, interaction) => {
         const data = await applicationSchema.findOne({ Guild: interaction.guild.id });
         if (!data) return client.errNormal({ error: "The application system is not set up!", type: 'ephemeral' }, interaction);
 
+
+        const options = data.Roles.map(r => {
+            const role = interaction.guild.roles.cache.get(r);
+            return {
+                label: role ? role.name : r,
+                value: r
+            };
+        });
+
+        const row = new Discord.ActionRowBuilder().addComponents(
+            new Discord.StringSelectMenuBuilder()
+                .setCustomId('applyRole')
+                .setPlaceholder('Select a role')
+                .addOptions(options)
+        );
+
+        return interaction.reply({ content: 'Select the role you want to apply for:', components: [row], ephemeral: true });
+    }
+
+    if (interaction.isStringSelectMenu() && interaction.customId == 'applyRole') {
+        const data = await applicationSchema.findOne({ Guild: interaction.guild.id });
+        if (!data) return client.errNormal({ error: "The application system is not set up!", type: 'ephemeral' }, interaction);
+
+        const roleId = interaction.values[0];
+
+
         const modal = new Discord.ModalBuilder()
             .setCustomId('applyModal')
             .setTitle('Application')
@@ -251,11 +277,18 @@ module.exports = async (client, interaction) => {
             .setTitle('📨・New application')
             .addFields(
                 { name: 'User', value: `${interaction.user}`, inline: true },
+
+                { name: 'Role', value: `<@&${roleId}>`, inline: true },
+
                 { name: 'Application', value: response }
             )
             .setColor(client.config.colors.normal);
 
+
+        logChannel.send({ content: `<@&${roleId}>`, embeds: [embed] });
+
         logChannel.send({ content: data.Roles.map(r => `<@&${r}>`).join(' '), embeds: [embed] });
+
 
         client.succNormal({ text: `Application successfully submitted!`, type: 'ephemeral' }, submitted);
     }

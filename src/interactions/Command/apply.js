@@ -13,7 +13,9 @@ module.exports = {
                 .setName('setup')
                 .setDescription('Setup the apply system')
                 .addChannelOption(option => option.setName('channel').setDescription('The channel for the apply message').setRequired(true).addChannelTypes(ChannelType.GuildText))
-                .addStringOption(option => option.setName('roles').setDescription('Roles to mention on application logs').setRequired(true))
+
+                .addStringOption(option => option.setName('roles').setDescription('Roles users can apply for').setRequired(true))
+
                 .addChannelOption(option => option.setName('log').setDescription('The channel for the application logs').setRequired(true).addChannelTypes(ChannelType.GuildText))
         ),
 
