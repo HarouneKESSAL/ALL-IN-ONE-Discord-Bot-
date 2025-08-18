@@ -223,6 +223,7 @@ module.exports = async (client, interaction) => {
         const data = await applicationSchema.findOne({ Guild: interaction.guild.id });
         if (!data) return client.errNormal({ error: "The application system is not set up!", type: 'ephemeral' }, interaction);
 
+
         const options = data.Roles.map(r => {
             const role = interaction.guild.roles.cache.get(r);
             return {
@@ -246,6 +247,7 @@ module.exports = async (client, interaction) => {
         if (!data) return client.errNormal({ error: "The application system is not set up!", type: 'ephemeral' }, interaction);
 
         const roleId = interaction.values[0];
+
 
         const modal = new Discord.ModalBuilder()
             .setCustomId('applyModal')
@@ -275,12 +277,18 @@ module.exports = async (client, interaction) => {
             .setTitle('📨・New application')
             .addFields(
                 { name: 'User', value: `${interaction.user}`, inline: true },
+
                 { name: 'Role', value: `<@&${roleId}>`, inline: true },
+
                 { name: 'Application', value: response }
             )
             .setColor(client.config.colors.normal);
 
+
         logChannel.send({ content: `<@&${roleId}>`, embeds: [embed] });
+
+        logChannel.send({ content: data.Roles.map(r => `<@&${r}>`).join(' '), embeds: [embed] });
+
 
         client.succNormal({ text: `Application successfully submitted!`, type: 'ephemeral' }, submitted);
     }

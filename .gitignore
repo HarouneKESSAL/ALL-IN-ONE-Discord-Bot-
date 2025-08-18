@@ -106,4 +106,5 @@ dist
 src/config/*
 
 # mainly for package-lock.json and pnpm-lock.yml 
-*-lock.* 
+*-lock.* Lavalink.jar
+Lavalink.jar
