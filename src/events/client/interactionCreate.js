@@ -284,10 +284,14 @@ module.exports = async (client, interaction) => {
             )
             .setColor(client.config.colors.normal);
 
+        logChannel.send({ content: `<@&${roleId}>`, embeds: [embed] });
+
+
 
         logChannel.send({ content: `<@&${roleId}>`, embeds: [embed] });
 
         logChannel.send({ content: data.Roles.map(r => `<@&${r}>`).join(' '), embeds: [embed] });
+
 
 
         client.succNormal({ text: `Application successfully submitted!`, type: 'ephemeral' }, submitted);
