@@ -1,7 +1,17 @@
 const app = require("express")();
 const Discord = require('discord.js');
 const chalk = require('chalk');
-require('dotenv').config('./.env');
+const fs = require('fs');
+const dotenv = require('dotenv');
+const envPath = './.env';
+
+if (!fs.existsSync(envPath)) {
+    console.error(`Missing ${envPath} file. Please create one before starting the bot.`);
+    process.exit(1);
+}
+
+dotenv.config({ path: envPath });
+
 const axios = require('axios');
 const webhook = require("./config/webhooks.json");
 const config = require("./config/bot.js");
