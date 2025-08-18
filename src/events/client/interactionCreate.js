@@ -6,6 +6,7 @@ const banSchema = require("../../database/models/userBans");
 const verify = require("../../database/models/verify");
 const Commands = require("../../database/models/customCommand");
 const CommandsSchema = require("../../database/models/customCommandAdvanced");
+const applicationSchema = require("../../database/models/applicationChannels");
 module.exports = async (client, interaction) => {
     // Commands
     if (interaction.isCommand() || interaction.isUserContextMenuCommand()) {
@@ -216,6 +217,72 @@ module.exports = async (client, interaction) => {
 
     if (interaction.customId == "Bot_noticeTicket") {
         return require(`${process.cwd()}/src/commands/tickets/notice.js`)(client, interaction);
+    }
+
+    if (interaction.customId == "Bot_apply") {
+        const data = await applicationSchema.findOne({ Guild: interaction.guild.id });
+        if (!data) return client.errNormal({ error: "The application system is not set up!", type: 'ephemeral' }, interaction);
+
+        const options = data.Roles.map(r => {
+            const role = interaction.guild.roles.cache.get(r);
+            return {
+                label: role ? role.name : r,
+                value: r
+            };
+        });
+
+        const row = new Discord.ActionRowBuilder().addComponents(
+            new Discord.StringSelectMenuBuilder()
+                .setCustomId('applyRole')
+                .setPlaceholder('Select a role')
+                .addOptions(options)
+        );
+
+        return interaction.reply({ content: 'Select the role you want to apply for:', components: [row], ephemeral: true });
+    }
+
+    if (interaction.isStringSelectMenu() && interaction.customId == 'applyRole') {
+        const data = await applicationSchema.findOne({ Guild: interaction.guild.id });
+        if (!data) return client.errNormal({ error: "The application system is not set up!", type: 'ephemeral' }, interaction);
+
+        const roleId = interaction.values[0];
+
+        const modal = new Discord.ModalBuilder()
+            .setCustomId('applyModal')
+            .setTitle('Application')
+            .addComponents(
+                new Discord.ActionRowBuilder().addComponents(
+                    new Discord.TextInputBuilder()
+                        .setCustomId('application')
+                        .setLabel('Why do you want to apply?')
+                        .setStyle(Discord.TextInputStyle.Paragraph)
+                        .setRequired(true)
+                )
+            );
+        await interaction.showModal(modal);
+
+        const submitted = await interaction.awaitModalSubmit({
+            time: 60000,
+            filter: i => i.user.id === interaction.user.id
+        }).catch(() => { });
+
+        if (!submitted) return;
+
+        const response = submitted.fields.getTextInputValue('application');
+        const logChannel = interaction.guild.channels.cache.get(data.Log);
+
+        const embed = new Discord.EmbedBuilder()
+            .setTitle('📨・New application')
+            .addFields(
+                { name: 'User', value: `${interaction.user}`, inline: true },
+                { name: 'Role', value: `<@&${roleId}>`, inline: true },
+                { name: 'Application', value: response }
+            )
+            .setColor(client.config.colors.normal);
+
+        logChannel.send({ content: `<@&${roleId}>`, embeds: [embed] });
+
+        client.succNormal({ text: `Application successfully submitted!`, type: 'ephemeral' }, submitted);
     }
 }
 
