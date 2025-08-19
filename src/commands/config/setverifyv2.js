@@ -24,9 +24,6 @@ module.exports = async (client, interaction, args) => {
             }, interaction);
         }
 
-
-    if (enable) {
-
         const data = await Schema.findOne({ Guild: interaction.guild.id });
         if (data) {
             data.Channel = channel.id;
@@ -38,7 +35,6 @@ module.exports = async (client, interaction, args) => {
         }
         else {
             await Schema.create({ Guild: interaction.guild.id, Channel: channel.id, Role: role.id, LogChannel: log.id, AccessRole: accessRole.id });
-
         }
 
         client.succNormal({
