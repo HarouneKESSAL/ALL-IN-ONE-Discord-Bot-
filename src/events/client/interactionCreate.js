@@ -190,7 +190,9 @@ module.exports = async (client, interaction) => {
             }, logChannel);
         }
 
+
         return interaction.followUp({ content: 'Your verification has been submitted.', flags: Discord.MessageFlags.Ephemeral });
+
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('verifyv2_')) {
@@ -201,6 +203,7 @@ module.exports = async (client, interaction) => {
         if (!data) return;
 
         if (action === 'approve') {
+
             const member = await interaction.guild.members.fetch({ user: userId, force: true }).catch(() => null);
             if (!member) {
                 return interaction.update({ content: `❌ Could not find <@${userId}>`, embeds: interaction.message.embeds, components: [] });
@@ -221,6 +224,7 @@ module.exports = async (client, interaction) => {
                 : `✅ Approved <@${userId}> (failed to grant access role)`;
 
             await interaction.update({ content, embeds: interaction.message.embeds, components: [] });
+
         }
         else if (action === 'decline') {
             await interaction.update({ content: `❌ Declined <@${userId}>`, embeds: interaction.message.embeds, components: [] });
