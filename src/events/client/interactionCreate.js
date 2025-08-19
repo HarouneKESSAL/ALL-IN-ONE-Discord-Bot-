@@ -6,6 +6,8 @@ const banSchema = require("../../database/models/userBans");
 const verify = require("../../database/models/verify");
 const Commands = require("../../database/models/customCommand");
 const CommandsSchema = require("../../database/models/customCommandAdvanced");
+const applicationSchema = require("../../database/models/applicationChannels");
+const verifyV2 = require("../../database/models/verifyV2");
 module.exports = async (client, interaction) => {
     // Commands
     if (interaction.isCommand() || interaction.isUserContextMenuCommand()) {
@@ -127,6 +129,85 @@ module.exports = async (client, interaction) => {
         }
     }
 
+    // Advanced verify system
+    if (interaction.isButton() && interaction.customId === 'verifyv2_begin') {
+        const data = await verifyV2.findOne({ Guild: interaction.guild.id, Channel: interaction.channel.id });
+        if (!data) return;
+
+        const modal = new Discord.ModalBuilder()
+            .setCustomId('verifyv2_modal')
+            .setTitle('Server verification');
+
+        const nameInput = new Discord.TextInputBuilder()
+            .setCustomId('verifyv2_name')
+            .setLabel('Your name')
+            .setStyle(Discord.TextInputStyle.Short)
+            .setRequired(true);
+
+        const selfieInput = new Discord.TextInputBuilder()
+            .setCustomId('verifyv2_selfie')
+            .setLabel('Selfie URL')
+            .setStyle(Discord.TextInputStyle.Short)
+            .setRequired(true);
+
+        modal.addComponents(
+            new Discord.ActionRowBuilder().addComponents(nameInput),
+            new Discord.ActionRowBuilder().addComponents(selfieInput),
+        );
+
+        return interaction.showModal(modal);
+    }
+
+    if (interaction.isModalSubmit() && interaction.customId === 'verifyv2_modal') {
+        const data = await verifyV2.findOne({ Guild: interaction.guild.id });
+        if (!data) return;
+        const name = interaction.fields.getTextInputValue('verifyv2_name');
+        const selfie = interaction.fields.getTextInputValue('verifyv2_selfie');
+
+        const logChannel = interaction.guild.channels.cache.get(data.LogChannel);
+        if (logChannel) {
+            const row = new Discord.ActionRowBuilder().addComponents(
+                new Discord.ButtonBuilder()
+                    .setCustomId(`verifyv2_approve_${interaction.user.id}`)
+                    .setLabel('Approve')
+                    .setStyle(Discord.ButtonStyle.Success),
+                new Discord.ButtonBuilder()
+                    .setCustomId(`verifyv2_decline_${interaction.user.id}`)
+                    .setLabel('Decline')
+                    .setStyle(Discord.ButtonStyle.Danger)
+            );
+
+            client.embed({
+                title: `Verification request`,
+                desc: `User: ${interaction.user}\nName: ${name}\nSelfie: [link](${selfie})`,
+                image: selfie,
+                components: [row]
+            }, logChannel);
+        }
+
+        return interaction.reply({ content: 'Your verification has been submitted.', ephemeral: true });
+    }
+
+    if (interaction.isButton() && interaction.customId.startsWith('verifyv2_')) {
+        const parts = interaction.customId.split('_');
+        const action = parts[1];
+        const userId = parts[2];
+        const data = await verifyV2.findOne({ Guild: interaction.guild.id });
+        if (!data) return;
+
+        if (action === 'approve') {
+            const member = interaction.guild.members.cache.get(userId);
+            if (member) {
+                const role = interaction.guild.roles.cache.get(data.Role);
+                if (role) member.roles.remove(role).catch(() => { });
+            }
+            interaction.update({ content: `✅ Approved <@${userId}>`, embeds: interaction.message.embeds, components: [] });
+        }
+        else if (action === 'decline') {
+            interaction.update({ content: `❌ Declined <@${userId}>`, embeds: interaction.message.embeds, components: [] });
+        }
+    }
+
     // Reaction roles button
     if (interaction.isButton()) {
         var buttonID = interaction.customId.split("-");
@@ -216,6 +297,72 @@ module.exports = async (client, interaction) => {
 
     if (interaction.customId == "Bot_noticeTicket") {
         return require(`${process.cwd()}/src/commands/tickets/notice.js`)(client, interaction);
+    }
+
+    if (interaction.customId == "Bot_apply") {
+        const data = await applicationSchema.findOne({ Guild: interaction.guild.id });
+        if (!data) return client.errNormal({ error: "The application system is not set up!", type: 'ephemeral' }, interaction);
+
+        const options = data.Roles.map(r => {
+            const role = interaction.guild.roles.cache.get(r);
+            return {
+                label: role ? role.name : r,
+                value: r
+            };
+        });
+
+        const row = new Discord.ActionRowBuilder().addComponents(
+            new Discord.StringSelectMenuBuilder()
+                .setCustomId('applyRole')
+                .setPlaceholder('Select a role')
+                .addOptions(options)
+        );
+
+        return interaction.reply({ content: 'Select the role you want to apply for:', components: [row], ephemeral: true });
+    }
+
+    if (interaction.isStringSelectMenu() && interaction.customId == 'applyRole') {
+        const data = await applicationSchema.findOne({ Guild: interaction.guild.id });
+        if (!data) return client.errNormal({ error: "The application system is not set up!", type: 'ephemeral' }, interaction);
+
+        const roleId = interaction.values[0];
+
+        const modal = new Discord.ModalBuilder()
+            .setCustomId('applyModal')
+            .setTitle('Application')
+            .addComponents(
+                new Discord.ActionRowBuilder().addComponents(
+                    new Discord.TextInputBuilder()
+                        .setCustomId('application')
+                        .setLabel('Why do you want to apply?')
+                        .setStyle(Discord.TextInputStyle.Paragraph)
+                        .setRequired(true)
+                )
+            );
+        await interaction.showModal(modal);
+
+        const submitted = await interaction.awaitModalSubmit({
+            time: 60000,
+            filter: i => i.user.id === interaction.user.id
+        }).catch(() => { });
+
+        if (!submitted) return;
+
+        const response = submitted.fields.getTextInputValue('application');
+        const logChannel = interaction.guild.channels.cache.get(data.Log);
+
+        const embed = new Discord.EmbedBuilder()
+            .setTitle('📨・New application')
+            .addFields(
+                { name: 'User', value: `${interaction.user}`, inline: true },
+                { name: 'Role', value: `<@&${roleId}>`, inline: true },
+                { name: 'Application', value: response }
+            )
+            .setColor(client.config.colors.normal);
+
+        logChannel.send({ content: `<@&${roleId}>`, embeds: [embed] });
+
+        client.succNormal({ text: `Application successfully submitted!`, type: 'ephemeral' }, submitted);
     }
 }
 
