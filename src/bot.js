@@ -179,3 +179,5 @@ process.on('warning', warn => {
     })
 });
 
+module.exports = client;
+
