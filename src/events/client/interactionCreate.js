@@ -145,15 +145,8 @@ module.exports = async (client, interaction) => {
             .setStyle(Discord.TextInputStyle.Short)
             .setRequired(true);
 
-        const selfieInput = new Discord.TextInputBuilder()
-            .setCustomId('verifyv2_selfie')
-            .setLabel('Selfie URL')
-            .setStyle(Discord.TextInputStyle.Short)
-            .setRequired(true);
-
         modal.addComponents(
             new Discord.ActionRowBuilder().addComponents(nameInput),
-            new Discord.ActionRowBuilder().addComponents(selfieInput),
         );
 
         return interaction.showModal(modal);
@@ -163,7 +156,18 @@ module.exports = async (client, interaction) => {
         const data = await verifyV2.findOne({ Guild: interaction.guild.id });
         if (!data) return;
         const name = interaction.fields.getTextInputValue('verifyv2_name');
-        const selfie = interaction.fields.getTextInputValue('verifyv2_selfie');
+
+        await interaction.reply({ content: 'Please upload a selfie image or provide a link within 60 seconds.', flags: Discord.MessageFlags.Ephemeral });
+
+        const filter = m => m.author.id === interaction.user.id;
+        const collected = await interaction.channel.awaitMessages({ filter, max: 1, time: 60000 }).catch(() => null);
+        if (!collected || collected.size === 0) {
+            return interaction.followUp({ content: 'Verification timed out. Please try again.', flags: Discord.MessageFlags.Ephemeral });
+        }
+
+        const msg = collected.first();
+        const selfie = msg.attachments.first()?.url || msg.content;
+        msg.delete().catch(() => { });
 
         const logChannel = interaction.guild.channels.cache.get(data.LogChannel);
         if (logChannel) {
@@ -175,7 +179,7 @@ module.exports = async (client, interaction) => {
                 new Discord.ButtonBuilder()
                     .setCustomId(`verifyv2_decline_${interaction.user.id}`)
                     .setLabel('Decline')
-                    .setStyle(Discord.ButtonStyle.Danger)
+                    .setStyle(Discord.ButtonStyle.Danger),
             );
 
             client.embed({
@@ -186,7 +190,9 @@ module.exports = async (client, interaction) => {
             }, logChannel);
         }
 
-        return interaction.reply({ content: 'Your verification has been submitted.', flags: Discord.MessageFlags.Ephemeral });
+
+        return interaction.followUp({ content: 'Your verification has been submitted.', flags: Discord.MessageFlags.Ephemeral });
+
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('verifyv2_')) {
@@ -203,15 +209,22 @@ module.exports = async (client, interaction) => {
                 return interaction.update({ content: `❌ Could not find <@${userId}>`, embeds: interaction.message.embeds, components: [] });
             }
 
-
             if (data.Role) {
                 await member.roles.remove(data.Role).catch(() => { });
             }
+
+            let roleAssigned = true;
             if (data.AccessRole) {
-                await member.roles.add(data.AccessRole).catch(() => { });
+                await member.roles.add(data.AccessRole).catch(() => { roleAssigned = false; });
+                if (!member.roles.cache.has(data.AccessRole)) roleAssigned = false;
             }
 
-            await interaction.update({ content: `✅ Approved <@${userId}>`, embeds: interaction.message.embeds, components: [] });
+            const content = roleAssigned
+                ? `✅ Approved <@${userId}>`
+                : `✅ Approved <@${userId}> (failed to grant access role)`;
+
+            await interaction.update({ content, embeds: interaction.message.embeds, components: [] });
+
         }
         else if (action === 'decline') {
             await interaction.update({ content: `❌ Declined <@${userId}>`, embeds: interaction.message.embeds, components: [] });
