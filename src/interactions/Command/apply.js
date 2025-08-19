@@ -16,6 +16,7 @@ module.exports = {
                 .addStringOption(option => option.setName('roles').setDescription('Roles users can apply for').setRequired(true))
                 .addChannelOption(option => option.setName('log').setDescription('The channel for the application logs').setRequired(true).addChannelTypes(ChannelType.GuildText))
                 .addStringOption(option => option.setName('gif').setDescription('GIF URL to display in the embed'))
+
         ),
 
     /**
