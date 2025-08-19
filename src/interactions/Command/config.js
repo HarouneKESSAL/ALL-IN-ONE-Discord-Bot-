@@ -34,6 +34,16 @@ module.exports = {
         )
         .addSubcommand(subcommand =>
             subcommand
+                .setName('setverifyv2')
+                .setDescription('Setup the advanced verify panel')
+                .addBooleanOption(option => option.setName('enable').setDescription('Enable or disable').setRequired(true))
+                .addChannelOption(option => option.setName('channel').setDescription('Verification panel channel').setRequired(false).addChannelTypes(ChannelType.GuildText))
+                .addRoleOption(option => option.setName('role').setDescription('Unverified role').setRequired(false))
+                .addChannelOption(option => option.setName('log').setDescription('Log channel').setRequired(false).addChannelTypes(ChannelType.GuildText))
+                .addRoleOption(option => option.setName('access-role').setDescription('Role granted after approval').setRequired(false))
+        )
+        .addSubcommand(subcommand =>
+            subcommand
                 .setName('setchannelname')
                 .setDescription('Set a custom channel name for server stats')
                 .addStringOption(option => option.setName("name").setDescription("Enter a name for the channel or send HELP for the args").setRequired(true))
