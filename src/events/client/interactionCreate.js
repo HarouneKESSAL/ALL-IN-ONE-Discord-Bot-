@@ -363,17 +363,12 @@ module.exports = async (client, interaction) => {
             .setTitle('📨・New application')
             .addFields(
                 { name: 'User', value: `${interaction.user}`, inline: true },
-
                 { name: 'Role', value: `<@&${roleId}>`, inline: true },
-
                 { name: 'Application', value: response }
             )
             .setColor(client.config.colors.normal);
 
         logChannel.send({ content: `<@&${roleId}>`, embeds: [embed] });
-
-
-        logChannel.send({ content: data.Roles.map(r => `<@&${r}>`).join(' '), embeds: [embed] });
 
         client.succNormal({ text: `Application successfully submitted!`, type: 'ephemeral' }, submitted);
     }
