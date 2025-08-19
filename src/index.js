@@ -2,6 +2,7 @@ const app = require("express")();
 const Discord = require('discord.js');
 const chalk = require('chalk');
 const fs = require('fs');
+const path = require('path');
 const dotenv = require('dotenv');
 const envPath = './.env';
 
@@ -28,13 +29,29 @@ console.log(chalk.blue(chalk.bold(`System`)), (chalk.white(`>>`)), (chalk.green(
 console.log(`\u001b[0m`)
 console.log(chalk.blue(chalk.bold(`System`)), (chalk.white(`>>`)), chalk.red(`Version ${require(`${process.cwd()}/package.json`).version}`), (chalk.green(`loaded`)))
 console.log(`\u001b[0m`);
+const client = require('./bot');
 app.get("/", (req, res) => {
     res.setHeader('Content-Type', 'text/html');
     res.send(`<iframe style="margin: 0; padding: 0;" width="100%" height="100%" src="https://uoaio.vercel.app/" frameborder="0" allowfullscreen></iframe>`);
     res.end()
 });
+app.get("/dashboard", (req, res) => {
+    const commands = [...client.commands.values()].map(cmd => ({
+        name: cmd.data.name,
+        description: cmd.data.description || 'No description',
+    }));
+    const automationsDir = path.join(__dirname, 'commands', 'autosetup');
+    let automations = [];
+    if (fs.existsSync(automationsDir)) {
+        automations = fs.readdirSync(automationsDir)
+            .filter(f => f.endsWith('.js'))
+            .map(f => f.replace('.js', ''));
+    }
+    const commandItems = commands.map(c => `<li>${c.name} - ${c.description}</li>`).join('');
+    const automationItems = automations.map(a => `<li>${a}</li>`).join('');
+    res.send(`<html><head><title>Dashboard</title></head><body><h1>${client.user ? client.user.username : 'Bot'} Dashboard</h1><h2>Commands (${commands.length})</h2><ul>${commandItems}</ul><h2>Automations (${automations.length})</h2><ul>${automationItems}</ul></body></html>`);
+});
 app.listen(3000, () => console.log(chalk.blue(chalk.bold(`Server`)), (chalk.white(`>>`)), (chalk.green(`Running on`)), (chalk.red(`3000`))))
-require('./bot')
 
 // Webhooks
 const consoleLogs = new Discord.WebhookClient({

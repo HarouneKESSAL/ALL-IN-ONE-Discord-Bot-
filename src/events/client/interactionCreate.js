@@ -190,7 +190,6 @@ module.exports = async (client, interaction) => {
             }, logChannel);
         }
 
-
         return interaction.followUp({ content: 'Your verification has been submitted.', flags: Discord.MessageFlags.Ephemeral });
 
     }
@@ -208,6 +207,7 @@ module.exports = async (client, interaction) => {
             if (!member) {
                 return interaction.update({ content: `❌ Could not find <@${userId}>`, embeds: interaction.message.embeds, components: [] });
             }
+
 
             if (data.Role) {
                 await member.roles.remove(data.Role).catch(() => { });
