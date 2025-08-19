@@ -15,8 +15,7 @@ module.exports = {
             subcommand
                 .setName('create')
                 .setDescription('Make an announcement')
-                .addChannelOption(option => option.setName('channel').setDescription('Select a channel').setRequired(true).addChannelTypes(ChannelType.GuildText).addChannelTypes(ChannelType.GuildNews))
-                .addStringOption(option => option.setName('message').setDescription('Your announcement message').setRequired(true)),
+                .addChannelOption(option => option.setName('channel').setDescription('Select a channel').setRequired(true).addChannelTypes(ChannelType.GuildText).addChannelTypes(ChannelType.GuildNews)),
         )
         .addSubcommand(subcommand =>
             subcommand
@@ -34,15 +33,29 @@ module.exports = {
      */
 
     run: async (client, interaction, args) => {
-        await interaction.deferReply({ fetchReply: true });
-        const perms = await client.checkUserPerms({
-            flags: [Discord.PermissionsBitField.Flags.ManageMessages],
-            perms: [Discord.PermissionsBitField.Flags.ManageMessages]
-        }, interaction)
+        const sub = interaction.options.getSubcommand();
 
-        if (perms == false) return;
+        if (sub === 'create') {
+            if (!interaction.member.permissions.has(Discord.PermissionsBitField.Flags.ManageMessages)) {
+                return client.errMissingPerms({
+                    perms: client.bitfieldToName(Discord.PermissionsBitField.Flags.ManageMessages),
+                    type: 'ephemeral'
+                }, interaction);
+            }
 
-        client.loadSubcommands(client, interaction, args);
+            client.loadSubcommands(client, interaction, args);
+        }
+        else {
+            await interaction.deferReply({ fetchReply: true });
+            const perms = await client.checkUserPerms({
+                flags: [Discord.PermissionsBitField.Flags.ManageMessages],
+                perms: [Discord.PermissionsBitField.Flags.ManageMessages]
+            }, interaction)
+
+            if (perms == false) return;
+
+            client.loadSubcommands(client, interaction, args);
+        }
     },
 };
 
