@@ -202,6 +202,10 @@ module.exports = async (client, interaction) => {
             if (member) {
                 const role = interaction.guild.roles.cache.get(data.Role);
                 if (role) member.roles.remove(role).catch(() => { });
+
+                const access = interaction.guild.roles.cache.get(data.AccessRole);
+                if (access) member.roles.add(access).catch(() => { });
+
             }
             interaction.update({ content: `✅ Approved <@${userId}>`, embeds: interaction.message.embeds, components: [] });
         }
@@ -367,6 +371,7 @@ module.exports = async (client, interaction) => {
             .setColor(client.config.colors.normal);
 
         logChannel.send({ content: `<@&${roleId}>`, embeds: [embed] });
+
 
         logChannel.send({ content: data.Roles.map(r => `<@&${r}>`).join(' '), embeds: [embed] });
 

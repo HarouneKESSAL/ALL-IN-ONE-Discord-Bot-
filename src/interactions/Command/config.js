@@ -37,9 +37,12 @@ module.exports = {
                 .setName('setverifyv2')
                 .setDescription('Setup the advanced verify panel')
                 .addBooleanOption(option => option.setName('enable').setDescription('Enable or disable').setRequired(true))
-                .addChannelOption(option => option.setName('channel').setDescription('Verification panel channel').setRequired(true).addChannelTypes(ChannelType.GuildText))
-                .addRoleOption(option => option.setName('role').setDescription('Unverified role').setRequired(true))
-                .addChannelOption(option => option.setName('log').setDescription('Log channel').setRequired(true).addChannelTypes(ChannelType.GuildText))
+
+                .addChannelOption(option => option.setName('channel').setDescription('Verification panel channel').setRequired(false).addChannelTypes(ChannelType.GuildText))
+                .addRoleOption(option => option.setName('role').setDescription('Unverified role').setRequired(false))
+                .addChannelOption(option => option.setName('log').setDescription('Log channel').setRequired(false).addChannelTypes(ChannelType.GuildText))
+                .addRoleOption(option => option.setName('access-role').setDescription('Role granted after approval').setRequired(false))
+
         )
         .addSubcommand(subcommand =>
             subcommand

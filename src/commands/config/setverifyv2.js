@@ -14,16 +14,31 @@ module.exports = async (client, interaction, args) => {
     const role = interaction.options.getRole('role');
     const log = interaction.options.getChannel('log');
 
+    const accessRole = interaction.options.getRole('access-role');
+
     if (enable) {
+        if (!channel || !role || !log || !accessRole) {
+            return client.errNormal({
+                error: 'You must provide channel, role, log and access-role when enabling.',
+                type: 'editreply'
+            }, interaction);
+        }
+
+
+    if (enable) {
+
         const data = await Schema.findOne({ Guild: interaction.guild.id });
         if (data) {
             data.Channel = channel.id;
             data.Role = role.id;
             data.LogChannel = log.id;
+
+            data.AccessRole = accessRole.id;
             await data.save();
         }
         else {
-            await Schema.create({ Guild: interaction.guild.id, Channel: channel.id, Role: role.id, LogChannel: log.id });
+            await Schema.create({ Guild: interaction.guild.id, Channel: channel.id, Role: role.id, LogChannel: log.id, AccessRole: accessRole.id });
+
         }
 
         client.succNormal({
@@ -43,6 +58,13 @@ module.exports = async (client, interaction, args) => {
                     name: `📝┆Log channel`,
                     value: `${log} (${log.name})`,
                     inline: true
+
+                },
+                {
+                    name: `✅┆Access role`,
+                    value: `${accessRole} (${accessRole.name})`,
+                    inline: true
+
                 }
             ],
             type: 'editreply'
