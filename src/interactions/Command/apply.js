@@ -13,7 +13,6 @@ module.exports = {
                 .setName('setup')
                 .setDescription('Setup the apply system')
                 .addChannelOption(option => option.setName('channel').setDescription('The channel for the apply message').setRequired(true).addChannelTypes(ChannelType.GuildText))
-
                 .addStringOption(option => option.setName('roles').setDescription('Roles users can apply for').setRequired(true))
                 .addChannelOption(option => option.setName('log').setDescription('The channel for the application logs').setRequired(true).addChannelTypes(ChannelType.GuildText))
                 .addStringOption(option => option.setName('gif').setDescription('GIF URL to display in the embed'))
@@ -36,9 +35,7 @@ module.exports = {
         const channel = interaction.options.getChannel('channel');
         const roles = interaction.options.getString('roles').match(/\d+/g);
         const log = interaction.options.getChannel('log');
-
         const gif = interaction.options.getString('gif');
-
 
         Schema.findOne({ Guild: interaction.guild.id }, async (err, data) => {
             if (!data) {
@@ -69,8 +66,8 @@ module.exports = {
             .setDescription('Click the button below to submit your application.')
             .setColor(client.config.colors.normal);
 
-
         if (gif) embed.setImage(gif);
+
 
         channel.send({ embeds: [embed], components: [row] });
 
