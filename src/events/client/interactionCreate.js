@@ -197,10 +197,12 @@ module.exports = async (client, interaction) => {
         if (!data) return;
 
         if (action === 'approve') {
+
             const member = await interaction.guild.members.fetch({ user: userId, force: true }).catch(() => null);
             if (!member) {
                 return interaction.update({ content: `❌ Could not find <@${userId}>`, embeds: interaction.message.embeds, components: [] });
             }
+
 
             if (data.Role) {
                 await member.roles.remove(data.Role).catch(() => { });
