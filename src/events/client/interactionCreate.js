@@ -88,36 +88,35 @@ module.exports = async (client, interaction) => {
             try {
                 var image = new Discord.AttachmentBuilder(captcha.JPEGStream, { name: "captcha.jpeg" });
 
-                interaction.reply({ files: [image], fetchReply: true }).then(function (msg) {
-                    const filter = s => s.author.id == interaction.user.id;
+                await interaction.reply({ files: [image] });
+                const msg = await interaction.fetchReply();
+                const filter = s => s.author.id == interaction.user.id;
 
-                    interaction.channel.awaitMessages({ filter, max: 1 }).then(response => {
-                        if (response.first().content === captcha.value) {
-                            response.first().delete();
-                            msg.delete();
+                const response = await interaction.channel.awaitMessages({ filter, max: 1 });
+                if (response.first().content === captcha.value) {
+                    response.first().delete();
+                    msg.delete();
 
-                            client.succNormal({
-                                text: "You have been successfully verified!"
-                            }, interaction.user).catch(error => { })
+                    client.succNormal({
+                        text: "You have been successfully verified!"
+                    }, interaction.user).catch(error => { })
 
-                            var verifyUser = interaction.guild.members.cache.get(interaction.user.id);
-                            verifyUser.roles.add(data.Role);
-                        }
-                        else {
-                            response.first().delete();
-                            msg.delete();
+                    var verifyUser = interaction.guild.members.cache.get(interaction.user.id);
+                    verifyUser.roles.add(data.Role);
+                }
+                else {
+                    response.first().delete();
+                    msg.delete();
 
-                            client.errNormal({
-                                error: "You have answered the captcha incorrectly!",
-                                type: 'editreply'
-                            }, interaction).then(msgError => {
-                                setTimeout(() => {
-                                    msgError.delete();
-                                }, 2000)
-                            })
-                        }
+                    client.errNormal({
+                        error: "You have answered the captcha incorrectly!",
+                        type: 'editreply'
+                    }, interaction).then(msgError => {
+                        setTimeout(() => {
+                            msgError.delete();
+                        }, 2000)
                     })
-                })
+                }
             }
             catch (error) {
                 console.log(error)
@@ -187,7 +186,7 @@ module.exports = async (client, interaction) => {
             }, logChannel);
         }
 
-        return interaction.reply({ content: 'Your verification has been submitted.', ephemeral: true });
+        return interaction.reply({ content: 'Your verification has been submitted.', flags: Discord.MessageFlags.Ephemeral });
     }
 
     if (interaction.isButton() && interaction.customId.startsWith('verifyv2_')) {
@@ -198,19 +197,22 @@ module.exports = async (client, interaction) => {
         if (!data) return;
 
         if (action === 'approve') {
-            const member = interaction.guild.members.cache.get(userId);
-            if (member) {
-                const role = interaction.guild.roles.cache.get(data.Role);
-                if (role) member.roles.remove(role).catch(() => { });
-
-                const access = interaction.guild.roles.cache.get(data.AccessRole);
-                if (access) member.roles.add(access).catch(() => { });
-
+            const member = await interaction.guild.members.fetch({ user: userId, force: true }).catch(() => null);
+            if (!member) {
+                return interaction.update({ content: `❌ Could not find <@${userId}>`, embeds: interaction.message.embeds, components: [] });
             }
-            interaction.update({ content: `✅ Approved <@${userId}>`, embeds: interaction.message.embeds, components: [] });
+
+            if (data.Role) {
+                await member.roles.remove(data.Role).catch(() => { });
+            }
+            if (data.AccessRole) {
+                await member.roles.add(data.AccessRole).catch(() => { });
+            }
+
+            await interaction.update({ content: `✅ Approved <@${userId}>`, embeds: interaction.message.embeds, components: [] });
         }
         else if (action === 'decline') {
-            interaction.update({ content: `❌ Declined <@${userId}>`, embeds: interaction.message.embeds, components: [] });
+            await interaction.update({ content: `❌ Declined <@${userId}>`, embeds: interaction.message.embeds, components: [] });
         }
     }
 
