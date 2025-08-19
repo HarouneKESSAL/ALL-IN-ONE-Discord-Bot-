@@ -197,19 +197,24 @@ module.exports = async (client, interaction) => {
         if (!data) return;
 
         if (action === 'approve') {
-            const member = await interaction.guild.members.fetch(userId).catch(() => null);
-            if (member) {
-                const role = interaction.guild.roles.cache.get(data.Role);
-                if (role) await member.roles.remove(role).catch(() => { });
 
-                const access = interaction.guild.roles.cache.get(data.AccessRole);
-                if (access) await member.roles.add(access).catch(() => { });
-
+            const member = await interaction.guild.members.fetch({ user: userId, force: true }).catch(() => null);
+            if (!member) {
+                return interaction.update({ content: `❌ Could not find <@${userId}>`, embeds: interaction.message.embeds, components: [] });
             }
-            interaction.update({ content: `✅ Approved <@${userId}>`, embeds: interaction.message.embeds, components: [] });
+
+
+            if (data.Role) {
+                await member.roles.remove(data.Role).catch(() => { });
+            }
+            if (data.AccessRole) {
+                await member.roles.add(data.AccessRole).catch(() => { });
+            }
+
+            await interaction.update({ content: `✅ Approved <@${userId}>`, embeds: interaction.message.embeds, components: [] });
         }
         else if (action === 'decline') {
-            interaction.update({ content: `❌ Declined <@${userId}>`, embeds: interaction.message.embeds, components: [] });
+            await interaction.update({ content: `❌ Declined <@${userId}>`, embeds: interaction.message.embeds, components: [] });
         }
     }
 
