@@ -1,6 +1,7 @@
 const Discord = require('discord.js');
 const fs = require('fs');
 const { DisTube } = require('distube');
+const { YtDlpPlugin } = require('@distube/yt-dlp');
 
 // Discord client
 const client = new Discord.Client({
@@ -51,7 +52,7 @@ const client = new Discord.Client({
 client.distube = new DisTube(client, {
     emitAddSongWhenCreatingQueue: false,
     emitAddListWhenCreatingQueue: false,
-
+    plugins: [new YtDlpPlugin()],
 });
 
 client.distube
