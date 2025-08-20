@@ -1,7 +1,7 @@
 const Discord = require('discord.js');
 
 module.exports = async (client, interaction, args) => {
-    const player = client.player.players.get(interaction.guild.id);
+    const queue = client.distube.getQueue(interaction.guild.id);
 
     const channel = interaction.member.voice.channel;
     if (!channel) return client.errNormal({
@@ -9,12 +9,12 @@ module.exports = async (client, interaction, args) => {
         type: 'editreply'
     }, interaction);
 
-    if (player && (channel.id !== player?.voiceChannel)) return client.errNormal({
+    if (queue && (channel.id !== queue.voiceChannel.id)) return client.errNormal({
         error: `You're not in the same voice channel!`,
         type: 'editreply'
     }, interaction);
 
-    if (!player || !player.queue.current) return client.errNormal({
+    if (!queue || !queue.songs.length) return client.errNormal({
         error: "There are no songs playing in this server",
         type: 'editreply'
     }, interaction);
@@ -22,18 +22,17 @@ module.exports = async (client, interaction, args) => {
     let count = 0;
     let status;
 
-    if (player.queue.length == 0) {
+    if (queue.songs.length <= 1) {
         status = "No more music in the queue";
     }
     else {
-        status = player.queue.map((track) => {
+        status = queue.songs.slice(1).map((track) => {
             count += 1;
-            return (`**[#${count}]**┆${track.title.length >= 45 ? `${track.title.slice(0, 45)}...` : track.title} (Requested by <@!${track.requester.id}>)`);
+            return (`**[#${count}]**┆${track.name.length >= 45 ? `${track.name.slice(0, 45)}...` : track.name} (Requested by <@${track.user.id || track.user}>)`);
         }).join("\n");
     }
 
-    if (player.queue.current.thumbnail) thumbnail = player.queue.current.thumbnail;
-    else thumbnail = interaction.guild.iconURL({ size: 1024 });
+    const thumbnail = queue.songs[0].thumbnail || interaction.guild.iconURL({ size: 1024 });
 
     client.embed({
         title: `${client.emotes.normal.music}・Songs queue - ${interaction.guild.name}`,
@@ -42,7 +41,7 @@ module.exports = async (client, interaction, args) => {
         fields: [
             {
                 name: `${client.emotes.normal.music} Current song:`,
-                value: `${player.queue.current.title} (Requested by <@!${player.queue.current.requester.id}>)`
+                value: `${queue.songs[0].name} (Requested by <@${queue.songs[0].user.id || queue.songs[0].user}>)`
             }
         ],
         type: 'editreply'
