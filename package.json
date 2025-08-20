@@ -27,7 +27,9 @@
   "author": "uo1428",
   "license": "ISC",
   "dependencies": {
+    "@discordjs/opus": "^0.10.0",
     "@discordjs/voice": "^0.16.0",
+    "@distube/yt-dlp": "^2.0.1",
     "@haileybot/captcha-generator": "^1.7.0",
     "@iamtraction/google-translate": "^2.0.1",
     "@top-gg/sdk": "^3.1.3",
