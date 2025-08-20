@@ -85,7 +85,7 @@ module.exports = {
     run: async (client, interaction, args) => {
     
             if (interaction.user.id === process.env.OWNER_ID) {
-                await interaction.deferReply({ fetchReply: true });
+                await interaction.deferReply({ withResponse: true });
                 client.loadSubcommands(client, interaction, args);
             } else {
                 return client.errNormal({
