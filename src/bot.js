@@ -46,10 +46,12 @@ const client = new Discord.Client({
 
 
 // Music client using DisTube
+
 // Explicitly pass only supported options; deprecated leaveOn* flags are omitted
 client.distube = new DisTube(client, {
     emitAddSongWhenCreatingQueue: false,
     emitAddListWhenCreatingQueue: false,
+
 });
 
 client.distube
