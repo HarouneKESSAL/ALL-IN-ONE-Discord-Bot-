@@ -1,11 +1,6 @@
 const Discord = require('discord.js');
 const fs = require('fs');
-
-const { Manager } = require("erela.js");
-const Spotify = require("erela.js-spotify");
-const Facebook = require("erela.js-facebook");
-const Deezer = require("erela.js-deezer");
-const AppleMusic = require("erela.js-apple");
+const { DisTube } = require('distube');
 
 // Discord client
 const client = new Discord.Client({
@@ -50,45 +45,66 @@ const client = new Discord.Client({
 });
 
 
-const plugins = [
-    new AppleMusic(),
-    new Deezer(),
-    new Facebook(),
-]
-const clientID = process.env.SPOTIFY_CLIENT_ID;
-const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+// Music client using DisTube
+client.distube = new DisTube(client, {
+    leaveOnEmpty: true,
+    leaveOnStop: true,
+    leaveOnFinish: true,
+});
 
-if (clientID && clientSecret) plugins.push(
-    new Spotify({
-        clientID,
-        clientSecret,
+client.distube
+    .on('playSong', (queue, song) => {
+        let row = new Discord.ActionRowBuilder()
+            .addComponents(
+                new Discord.ButtonBuilder()
+                    .setEmoji(client.emotes.music.previous)
+                    .setCustomId("Bot-musicprev")
+                    .setStyle(Discord.ButtonStyle.Secondary),
+                new Discord.ButtonBuilder()
+                    .setEmoji(client.emotes.music.pause)
+                    .setCustomId("Bot-musicpause")
+                    .setStyle(Discord.ButtonStyle.Secondary),
+                new Discord.ButtonBuilder()
+                    .setEmoji(client.emotes.music.stop)
+                    .setCustomId("Bot-musicstop")
+                    .setStyle(Discord.ButtonStyle.Secondary),
+                new Discord.ButtonBuilder()
+                    .setEmoji(client.emotes.music.next)
+                    .setCustomId("Bot-musicnext")
+                    .setStyle(Discord.ButtonStyle.Secondary),
+            );
+
+        client.embed({
+            title: `${client.emotes.normal.music}・${song.name}`,
+            url: song.url,
+            desc: `Music started in <#${queue.voiceChannel.id}>!`,
+            thumbnail: song.thumbnail,
+            fields: [
+                {
+                    name: `👤┆Requested By`,
+                    value: `${song.user}`,
+                    inline: true
+                },
+                {
+                    name: `${client.emotes.normal.clock}┆Ends at`,
+                    value: `<t:${((Date.now() / 1000) + song.duration).toFixed(0)}:f>`,
+                    inline: true
+                },
+                {
+                    name: `🎬┆Author`,
+                    value: `${song.uploader?.name || 'Unknown'}`,
+                    inline: true
+                }
+            ],
+            components: [row],
+        }, queue.textChannel);
     })
-)
-
-// Lavalink client
-client.player = new Manager({
-    plugins,
-    nodes: [
-        {
-            host: process.env.LAVALINK_HOST || "lava.link",
-            port: parseInt(process.env.LAVALINK_PORT) || 80,
-            password: process.env.LAVALINK_PASSWORD || "CorwinDev",
-            secure: Boolean(process.env.LAVALINK_SECURE) || false
-        },
-    ],
-    send(id, payload) {
-        const guild = client.guilds.cache.get(id);
-        if (guild) guild.shard.send(payload);
-    }
-})
-
-
-const events = fs.readdirSync(`./src/events/music`).filter(files => files.endsWith('.js'));
-
-for (const file of events) {
-    const event = require(`./events/music/${file}`);
-    client.player.on(file.split(".")[0], event.bind(null, client)).setMaxListeners(0);
-};
+    .on('finish', queue => {
+        client.embed({
+            desc: `Music stopped as the queue is empty`,
+            color: client.config.colors.error,
+        }, queue.textChannel);
+    });
 
 // Connect to database
 ;(async () => await require("./database/connect")())();
