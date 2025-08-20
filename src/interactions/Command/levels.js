@@ -70,7 +70,7 @@ module.exports = {
             type: 'ephemeral'
         }, interaction);
 
-        await interaction.deferReply({ fetchReply: true });
+        await interaction.deferReply({ withResponse: true });
         client.loadSubcommands(client, interaction, args);
     },
 };
