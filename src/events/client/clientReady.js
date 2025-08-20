@@ -64,6 +64,6 @@ module.exports = async (client) => {
         return array;
     }
 
-    client.player.init(client.user.id);
+    // DisTube does not require manual initialization
 }
 

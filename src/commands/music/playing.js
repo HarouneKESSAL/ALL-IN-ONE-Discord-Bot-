@@ -1,9 +1,7 @@
 const Discord = require('discord.js');
 
-const forHumans = require("../../assets/utils/forhumans.js");
-
 module.exports = async (client, interaction, args) => {
-    const player = client.player.players.get(interaction.guild.id);
+    const queue = client.distube.getQueue(interaction.guild.id);
 
     const channel = interaction.member.voice.channel;
     if (!channel) return client.errNormal({
@@ -11,46 +9,45 @@ module.exports = async (client, interaction, args) => {
         type: 'editreply'
     }, interaction);
 
-    if (player && (channel.id !== player?.voiceChannel)) return client.errNormal({
+    if (queue && (channel.id !== queue.voiceChannel.id)) return client.errNormal({
         error: `You're not in the same voice channel!`,
         type: 'editreply'
     }, interaction);
-
-    if (!player || !player.queue.current) return client.errNormal({
+    if (!queue || !queue.songs.length) return client.errNormal({
         error: "There are no songs playing in this server",
         type: 'editreply'
     }, interaction);
 
-    const musicLength = (player.queue.current.isStream ? null : ((!player.queue.current || !player.queue.current.duration || isNaN(player.queue.current.duration)) ? null : player.queue.current.duration))
-    const nowTime = (!player.position || isNaN(player.position)) ? null : player.position;
+    const musicLength = queue.songs[0].duration * 1000;
+    const nowTime = queue.currentTime * 1000;
 
     const bar = await createProgressBar(musicLength, nowTime);
 
     client.embed({
-        title: `${client.emotes.normal.music}・${player.queue.current.title}`,
-        url: player.queue.current.uri,
-        thumbnail: player.queue.current?.thumbnail ? player.queue.current?.thumbnail : '',
+        title: `${client.emotes.normal.music}・${queue.songs[0].name}`,
+        url: queue.songs[0].url,
+        thumbnail: queue.songs[0]?.thumbnail ? queue.songs[0]?.thumbnail : '',
         fields: [
             {
                 name: `👤┆Requested By`,
-                value: `${player.queue.current.requester}`,
+                value: `${queue.songs[0].user}`,
                 inline: true
             },
             {
                 name: `${client.emotes.normal.clock}┆Duration`,
-                value: `<t:${((Date.now() / 1000) + (player.queue.current.duration / 1000) - nowTime / 1000).toFixed(0)}:f>`,
+                value: `<t:${((Date.now() / 1000) + (queue.songs[0].duration) - (nowTime / 1000)).toFixed(0)}:f>`,
                 inline: true
             },
             {
                 name: `${client.emotes.normal.volume}┆Volume`,
-                value: `${player.volume}%`,
+                value: `${queue.volume}%`,
                 inline: true
             },
             {
                 name: `${client.emotes.normal.music}┆Progress`,
-                value: `${new Date(player.position).toISOString().slice(11, 19)} ┃ ` +
+                value: `${new Date(queue.currentTime * 1000).toISOString().slice(11, 19)} ┃ ` +
                     bar +
-                    ` ┃ ${new Date(player.queue.current.duration).toISOString().slice(11, 19)}`,
+                    ` ┃ ${new Date(queue.songs[0].duration * 1000).toISOString().slice(11, 19)}`,
                 inline: false
             }
         ],
